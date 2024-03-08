@@ -1,7 +1,4 @@
-# Example usage
-from IPython.display import display
 from DepthEstimator import BoundaryDepthExtractor
-from PIL import Image
 
 # Assuming boundary_depth_map is correctly generated above
 if __name__ == "__main__":
@@ -13,7 +10,3 @@ if __name__ == "__main__":
 
     image_path = 'images/bedroom01.jpg'
     boundary_depth_map = boundary_depth_extractor.extract_boundary_depth(image_path)
-
-    # Convert to PIL Image and display
-    img = Image.fromarray(boundary_depth_map)
-    img.show()

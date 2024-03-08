@@ -3,6 +3,9 @@ from PIL import Image
 import numpy as np
 from torchvision.transforms import Compose, Resize, ToTensor, Normalize
 from transformers import DPTImageProcessor, DPTForDepthEstimation
+import numpy as np
+import os
+import math
 
 # Assuming implementation for MeshProjector and LooseControlNet are available as described previously
 
@@ -40,11 +43,88 @@ class BoundaryDepthExtractor:
         # Initialize the Depth Estimator
         self.depth_estimator = DepthEstimator(model_name=depth_model_checkpoint)
 
+    def vete(self,v, vt):
+        if v == vt:
+            return str(v)
+        return str(v) + "/" + str(vt)
+
+    def create_obj(self, img, objPath='model.obj', mtlPath='model.mtl', matName='colored', useMaterial=False):
+        w = img.shape[1]
+        h = img.shape[0]
+
+        FOV = math.pi / 4
+        D = (img.shape[0] / 2) / math.tan(FOV / 2)
+
+        if max(objPath.find('\\'), objPath.find('/')) > -1:
+            os.makedirs(os.path.dirname(mtlPath), exist_ok=True)
+
+        with open(objPath, "w") as f:
+            if useMaterial:
+                f.write("mtllib " + mtlPath + "\n")
+                f.write("usemtl " + matName + "\n")
+
+            ids = np.zeros((img.shape[1], img.shape[0]), int)
+            vid = 1
+
+            all_x = []
+            all_y = []
+            all_z = []
+
+            for u in range(0, w):
+                for v in range(h - 1, -1, -1):
+
+                    d = img[v, u]
+
+                    ids[u, v] = vid
+                    if d == 0.0:
+                        ids[u, v] = 0
+                    vid += 1
+
+                    x = u - w / 2
+                    y = v - h / 2
+                    z = -D
+
+                    norm = 1 / math.sqrt(x * x + y * y + z * z)
+
+                    t = d / (z * norm)
+
+                    x = -t * x * norm
+                    y = t * y * norm
+                    z = -t * z * norm
+
+                    f.write("v " + str(x) + " " + str(y) + " " + str(z) + "\n")
+
+            for u in range(0, img.shape[1]):
+                for v in range(0, img.shape[0]):
+                    f.write("vt " + str(u / img.shape[1]) +
+                            " " + str(v / img.shape[0]) + "\n")
+
+            for u in range(0, img.shape[1] - 1):
+                for v in range(0, img.shape[0] - 1):
+
+                    v1 = ids[u, v]
+                    v3 = ids[u + 1, v]
+                    v2 = ids[u, v + 1]
+                    v4 = ids[u + 1, v + 1]
+
+                    if v1 == 0 or v2 == 0 or v3 == 0 or v4 == 0:
+                        continue
+
+                    f.write("f " + self.vete(v1, v1) + " " +
+                            self.vete(v2, v2) + " " + self.vete(v3, v3) + "\n")
+                    f.write("f " + self.vete(v3, v3) + " " +
+                            self.vete(v2, v2) + " " + self.vete(v4, v4) + "\n")
+
     def extract_boundary_depth(self, image_path):
         input_image = Image.open(image_path)
         depth_map = self.depth_estimator.predict_depth(input_image)
-        return depth_map
-        # mesh_projector = MeshProjector()
-        # point_cloud = mesh_projector.depth_map_to_point_cloud(depth_map, intrinsic_matrix=[525, 525, depth_map.shape[1]/2, depth_map.shape[0]/2])
-        #
-        # planes, plane_models = mesh_projector.detect_planes_with_ransac(point_cloud)
+        # Convert to PIL Image and display
+        img = Image.fromarray(depth_map)
+        depth_array = np.array(img)
+
+        # Invert the depth image
+        max_depth = np.max(depth_array)
+        min_depth = np.min(depth_array)
+        inverted_depth_array = max_depth - depth_array + min_depth
+        print("Creating the object....")
+        self.create_obj(inverted_depth_array)
