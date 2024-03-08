@@ -6,6 +6,7 @@ from transformers import DPTImageProcessor, DPTForDepthEstimation
 import numpy as np
 import os
 import math
+import open3d as o3d
 
 # Assuming implementation for MeshProjector and LooseControlNet are available as described previously
 
@@ -42,7 +43,18 @@ class BoundaryDepthExtractor:
     def __init__(self, depth_model_checkpoint, controlnet_checkpoint, sd_checkpoint):
         # Initialize the Depth Estimator
         self.depth_estimator = DepthEstimator(model_name=depth_model_checkpoint)
-
+        self.start = """# .PCD v.7 - Point Cloud Data file format
+VERSION .7
+FIELDS x y z
+SIZE 4 4 4
+TYPE F F F
+COUNT 1 1 1
+WIDTH {0}
+HEIGHT 1
+VIEWPOINT 0 0 0 1 0 0 0
+POINTS {0}
+DATA ascii
+"""
     def vete(self,v, vt):
         if v == vt:
             return str(v)
@@ -128,3 +140,24 @@ class BoundaryDepthExtractor:
         inverted_depth_array = max_depth - depth_array + min_depth
         print("Creating the object....")
         self.create_obj(inverted_depth_array)
+        print("Converting....")
+        with open('model.obj', "r") as infile:
+            obj = infile.read()
+        points = []
+        for line in obj.split("\n"):
+            if (line != ""):
+                line = line.split()
+                if (line[0] == "v"):
+                    point = [float(line[1]), float(line[2]), float(line[3])]
+                    points.append(point)
+        with open('model.pcd', "w") as outfile:
+            outfile.write(self.start.format(len(points)))
+
+            for point in points:
+                outfile.write("{} {} {}\n".format(point[0], point[1], point[2]))
+
+        # Load the PCD file
+        pcd = o3d.io.read_point_cloud('model.pcd')
+
+        # Visualize the point cloud
+        o3d.visualization.draw_geometries([pcd])
