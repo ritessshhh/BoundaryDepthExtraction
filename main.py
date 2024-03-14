@@ -8,5 +8,6 @@ if __name__ == "__main__":
         sd_checkpoint='runwayml/stable-diffusion-v1-5'
     )
 
-    image_path = 'images/bedroom01.jpg'
-    boundary_depth_map = boundary_depth_extractor.extract_boundary_depth(image_path)
+    image_path = 'images/empty_room.jpg'
+    boundary_depth_extractor.extract_boundary_depth(image_path, filename="model.pcd")
+    boundary_depth_extractor.polygon_approx("model.pcd")

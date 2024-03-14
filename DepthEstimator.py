@@ -1,12 +1,13 @@
 import torch
 from PIL import Image
-import numpy as np
-from torchvision.transforms import Compose, Resize, ToTensor, Normalize
 from transformers import DPTImageProcessor, DPTForDepthEstimation
 import numpy as np
 import os
 import math
 import open3d as o3d
+from scipy.spatial import ConvexHull
+import matplotlib.pyplot as plt
+import cv2
 
 # Assuming implementation for MeshProjector and LooseControlNet are available as described previously
 
@@ -127,9 +128,62 @@ DATA ascii
                     f.write("f " + self.vete(v3, v3) + " " +
                             self.vete(v2, v2) + " " + self.vete(v4, v4) + "\n")
 
-    def extract_boundary_depth(self, image_path):
+
+    # def extract_boundary_depth(self, image_path):
+    #     input_image = Image.open(image_path)
+    #     depth_map = self.depth_estimator.predict_depth(input_image)
+    #     print("Depth map shape:", depth_map.shape)
+    #     # Convert to PIL Image and display
+    #     img = Image.fromarray(depth_map)
+    #     depth_array = np.array(img)
+    #
+    #     # Invert the depth image
+    #     max_depth = np.max(depth_array)
+    #     min_depth = np.min(depth_array)
+    #     inverted_depth_array = max_depth - depth_array + min_depth
+    #     print("Creating the object....")
+    #     self.create_obj(inverted_depth_array)
+    #     print("Converting....")
+    #     with open('model.obj', "r") as infile:
+    #         obj = infile.read()
+    #     points = []
+    #     for line in obj.split("\n"):
+    #         if (line != ""):
+    #             line = line.split()
+    #             if (line[0] == "v"):
+    #                 point = [float(line[1]), float(line[2]), float(line[3])]
+    #                 points.append(point)
+    #     with open('model.pcd', "w") as outfile:
+    #         outfile.write(self.start.format(len(points)))
+    #
+    #         for point in points:
+    #             outfile.write("{} {} {}\n".format(point[0], point[1], point[2]))
+    #
+    #
+    #     os.remove('model.obj')
+    # def extract_boundary_depth(self, image_path):
+    #     input_image = Image.open(image_path)
+    #     depth_map = self.depth_estimator.predict_depth(input_image)
+    #
+    #     # Convert depth map to 3D points
+    #     points_3d = self.convert_depth_to_3d_points(depth_map)
+    #
+    #     # Directly project 3D points to 2D
+    #     projected_points_2d = self.project_mesh_to_plane(points_3d)
+    #
+    #     return projected_points_2d
+
+        # return projected_points_2d
+
+    # def project_3d_points_to_2d(self, points_3d):
+    #     projected_points_2d = self.project_mesh_to_plane(points_3d)
+    #     print("Number of projected 2D points:", len(projected_points_2d))
+    #     return projected_points_2d
+
+    def extract_boundary_depth(self, image_path, filename="model.pcd"):
         input_image = Image.open(image_path)
         depth_map = self.depth_estimator.predict_depth(input_image)
+        print("Depth map shape:", depth_map.shape)
         # Convert to PIL Image and display
         img = Image.fromarray(depth_map)
         depth_array = np.array(img)
@@ -150,14 +204,143 @@ DATA ascii
                 if (line[0] == "v"):
                     point = [float(line[1]), float(line[2]), float(line[3])]
                     points.append(point)
-        with open('model.pcd', "w") as outfile:
+        with open(filename, "w") as outfile:
             outfile.write(self.start.format(len(points)))
 
             for point in points:
                 outfile.write("{} {} {}\n".format(point[0], point[1], point[2]))
 
-        # Load the PCD file
-        pcd = o3d.io.read_point_cloud('model.pcd')
+        os.remove("model.obj")
 
-        # Visualize the point cloud
-        o3d.visualization.draw_geometries([pcd])
+        # pcd = o3d.io.read_point_cloud(filename)
+        # points_3d = np.asarray(pcd.points)
+        # print("Number of 3D points:", len(points_3d))
+        #
+        # projected_points_2d = self.project_mesh_to_plane(points_3d)
+        # print("Number of projected 2D points:", len(projected_points_2d))
+        #
+        # return projected_points_2d
+
+    def polygon_approx(self, file):
+        pcd = o3d.io.read_point_cloud(file)
+
+        # Convert to numpy array
+        points = np.asarray(pcd.points)
+
+        # Orthographic projection (omit Z)
+        points_2d = points[:, :2]
+
+        # Determine the boundary of the points (convex hull)
+        hull = ConvexHull(points_2d)
+        hull_points = points_2d[hull.vertices]
+
+        # Invert the y-axis to correct upside down issue
+        hull_points[:, 1] = -hull_points[:, 1]
+
+        # Epsilon parameter for approximation accuracy (adjust as needed)
+        epsilon = 0.01 * cv2.arcLength(hull_points.astype(np.float32), True)
+        approx_polygon = cv2.approxPolyDP(hull_points.astype(np.float32), epsilon, True)
+
+        # Plot the results
+        plt.plot(hull_points[:, 0], hull_points[:, 1], 'k--', lw=1)  # Hull boundary in black dashed line
+        plt.plot(approx_polygon[:, 0, 0], approx_polygon[:, 0, 1], 'b-', lw=2)  # Approximated polygon in blue line
+        plt.fill(hull_points[:, 0], hull_points[:, 1], 'lightgray')  # Fill the convex hull for visualization
+
+        plt.title('Polygon Approximation of 2D Orthographic Projection')
+        plt.xlabel('X axis')
+        plt.ylabel('Y axis')
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.gca().invert_yaxis()  # Ensure y-axis is not inverted for visualization
+        plt.show()
+
+
+    def extrude_polygon_to_3d(self, polygon_vertices_2d, scene_height):
+        # Create an empty list to store the 3D vertices
+        vertices_3d = []
+
+        # First, add the base vertices (at z=0)
+        for vertex in polygon_vertices_2d:
+            vertices_3d.append([vertex[0], vertex[1], 0])
+
+        # Then, add the top vertices (at z=scene_height)
+        for vertex in polygon_vertices_2d:
+            vertices_3d.append([vertex[0], vertex[1], scene_height])
+
+        # Convert vertices list to numpy array
+        vertices_3d = np.array(vertices_3d)
+
+        # Create an empty mesh
+        mesh = o3d.geometry.TriangleMesh()
+
+        # Set the vertices of the mesh
+        mesh.vertices = o3d.utility.Vector3dVector(vertices_3d)
+
+        # Prepare to create triangles for the sides of the mesh
+        triangles = []
+        num_base_vertices = len(polygon_vertices_2d)
+
+        # Forming sides by connecting four points
+        for i in range(num_base_vertices):
+            # Indices of the base vertices
+            base_vertex_index = i
+            next_base_vertex_index = (i + 1) % num_base_vertices
+
+            # Indices of the top vertices
+            top_vertex_index = i + num_base_vertices
+            next_top_vertex_index = (next_base_vertex_index + num_base_vertices) % (2 * num_base_vertices)
+
+            # Create two triangles for the current side
+            triangles.append([base_vertex_index, next_base_vertex_index, top_vertex_index])
+            triangles.append([next_base_vertex_index, next_top_vertex_index, top_vertex_index])
+
+        # Add triangles to the mesh
+        mesh.triangles = o3d.utility.Vector3iVector(np.array(triangles))
+
+        # Optionally, add top and bottom faces here
+
+        # Compute normals for the mesh
+        mesh.compute_vertex_normals()
+        print("Number of vertices in the extruded mesh:", len(mesh.vertices))
+        print("Number of triangles in the extruded mesh:", len(mesh.triangles))
+
+        return mesh
+
+
+if __name__ == "__main__":
+    boundary_depth_extractor = BoundaryDepthExtractor(
+        depth_model_checkpoint='Intel/dpt-hybrid-midas',
+        controlnet_checkpoint='shariqfarooq123/LooseControl',
+        sd_checkpoint='runwayml/stable-diffusion-v1-5'
+    )
+
+    # Path to your image
+    image_path = 'images/empty_room.jpg'
+
+    # Load and predict depth map
+    # depth_map = boundary_depth_extractor.extract_boundary_depth(image_path)
+    # boundary_depth_extractor.visualize_depth_map(depth_map)  # Visualize depth map
+
+    # Extract boundary depth which includes creating OBJ from depth map
+    projected_points_2d = boundary_depth_extractor.extract_boundary_depth(image_path)
+    boundary_depth_extractor.visualize_projected_2d(projected_points_2d)  # Visualize projected 2D points
+
+    # # Approximate the boundary into polygon planes
+    polygon_vertices = boundary_depth_extractor.approximate_boundary_polygon(projected_points_2d)
+    # boundary_depth_extractor.visualize_2d_boundary_polygon(polygon_vertices)  # Visualize 2D boundary polygon
+    #
+    # # Assuming a scene height for extrusion
+    scene_height = 3.0  # Adjust this based on your scene
+    #
+    # # Extrude and visualize the 3D boundary surface from polygon vertices
+    extruded_mesh = boundary_depth_extractor.extrude_polygon_to_3d(polygon_vertices, scene_height)
+    # boundary_depth_extractor.visualize_extruded_mesh(extruded_mesh)  # Visualize extruded mesh
+    vis = o3d.visualization.Visualizer()
+    vis.create_window(window_name='Boundary Surface Depth Visualization')
+
+    vis.add_geometry(extruded_mesh)
+    depth = vis.capture_depth_float_buffer(do_render=True)
+    depth_array = np.asarray(depth)
+    depth_image_array = (depth_array * 255).astype(np.uint8)
+    depth_image = o3d.geometry.Image(depth_image_array)
+    o3d.io.write_image("boundary_depth_map.png", depth_image)
+    vis.destroy_window()
