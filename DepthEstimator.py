@@ -129,57 +129,6 @@ DATA ascii
                             self.vete(v2, v2) + " " + self.vete(v4, v4) + "\n")
 
 
-    # def extract_boundary_depth(self, image_path):
-    #     input_image = Image.open(image_path)
-    #     depth_map = self.depth_estimator.predict_depth(input_image)
-    #     print("Depth map shape:", depth_map.shape)
-    #     # Convert to PIL Image and display
-    #     img = Image.fromarray(depth_map)
-    #     depth_array = np.array(img)
-    #
-    #     # Invert the depth image
-    #     max_depth = np.max(depth_array)
-    #     min_depth = np.min(depth_array)
-    #     inverted_depth_array = max_depth - depth_array + min_depth
-    #     print("Creating the object....")
-    #     self.create_obj(inverted_depth_array)
-    #     print("Converting....")
-    #     with open('model.obj', "r") as infile:
-    #         obj = infile.read()
-    #     points = []
-    #     for line in obj.split("\n"):
-    #         if (line != ""):
-    #             line = line.split()
-    #             if (line[0] == "v"):
-    #                 point = [float(line[1]), float(line[2]), float(line[3])]
-    #                 points.append(point)
-    #     with open('model.pcd', "w") as outfile:
-    #         outfile.write(self.start.format(len(points)))
-    #
-    #         for point in points:
-    #             outfile.write("{} {} {}\n".format(point[0], point[1], point[2]))
-    #
-    #
-    #     os.remove('model.obj')
-    # def extract_boundary_depth(self, image_path):
-    #     input_image = Image.open(image_path)
-    #     depth_map = self.depth_estimator.predict_depth(input_image)
-    #
-    #     # Convert depth map to 3D points
-    #     points_3d = self.convert_depth_to_3d_points(depth_map)
-    #
-    #     # Directly project 3D points to 2D
-    #     projected_points_2d = self.project_mesh_to_plane(points_3d)
-    #
-    #     return projected_points_2d
-
-        # return projected_points_2d
-
-    # def project_3d_points_to_2d(self, points_3d):
-    #     projected_points_2d = self.project_mesh_to_plane(points_3d)
-    #     print("Number of projected 2D points:", len(projected_points_2d))
-    #     return projected_points_2d
-
     def extract_boundary_depth(self, image_path, filename="model.pcd"):
         input_image = Image.open(image_path)
         depth_map = self.depth_estimator.predict_depth(input_image)
@@ -304,43 +253,3 @@ DATA ascii
         print("Number of triangles in the extruded mesh:", len(mesh.triangles))
 
         return mesh
-
-
-if __name__ == "__main__":
-    boundary_depth_extractor = BoundaryDepthExtractor(
-        depth_model_checkpoint='Intel/dpt-hybrid-midas',
-        controlnet_checkpoint='shariqfarooq123/LooseControl',
-        sd_checkpoint='runwayml/stable-diffusion-v1-5'
-    )
-
-    # Path to your image
-    image_path = 'images/empty_room.jpg'
-
-    # Load and predict depth map
-    # depth_map = boundary_depth_extractor.extract_boundary_depth(image_path)
-    # boundary_depth_extractor.visualize_depth_map(depth_map)  # Visualize depth map
-
-    # Extract boundary depth which includes creating OBJ from depth map
-    projected_points_2d = boundary_depth_extractor.extract_boundary_depth(image_path)
-    boundary_depth_extractor.visualize_projected_2d(projected_points_2d)  # Visualize projected 2D points
-
-    # # Approximate the boundary into polygon planes
-    polygon_vertices = boundary_depth_extractor.approximate_boundary_polygon(projected_points_2d)
-    # boundary_depth_extractor.visualize_2d_boundary_polygon(polygon_vertices)  # Visualize 2D boundary polygon
-    #
-    # # Assuming a scene height for extrusion
-    scene_height = 3.0  # Adjust this based on your scene
-    #
-    # # Extrude and visualize the 3D boundary surface from polygon vertices
-    extruded_mesh = boundary_depth_extractor.extrude_polygon_to_3d(polygon_vertices, scene_height)
-    # boundary_depth_extractor.visualize_extruded_mesh(extruded_mesh)  # Visualize extruded mesh
-    vis = o3d.visualization.Visualizer()
-    vis.create_window(window_name='Boundary Surface Depth Visualization')
-
-    vis.add_geometry(extruded_mesh)
-    depth = vis.capture_depth_float_buffer(do_render=True)
-    depth_array = np.asarray(depth)
-    depth_image_array = (depth_array * 255).astype(np.uint8)
-    depth_image = o3d.geometry.Image(depth_image_array)
-    o3d.io.write_image("boundary_depth_map.png", depth_image)
-    vis.destroy_window()
