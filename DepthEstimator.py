@@ -9,8 +9,6 @@ from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
 import cv2
 
-# Assuming implementation for MeshProjector and LooseControlNet are available as described previously
-
 class DepthEstimator:
     def __init__(self, model_name="Intel/dpt-hybrid-midas", device="cpu"):
         self.device = device
@@ -18,7 +16,7 @@ class DepthEstimator:
         self.model = DPTForDepthEstimation.from_pretrained(model_name).to(device)
         self.model.eval()
 
-    def predict_depth(self, image):
+    def predictDepth(self, image):
         """Predict depth map from an image."""
         inputs = self.processor(images=image, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
@@ -40,8 +38,9 @@ class DepthEstimator:
 
         return normalized_depth_map
 
+
 class BoundaryDepthExtractor:
-    def __init__(self, depth_model_checkpoint, controlnet_checkpoint, sd_checkpoint):
+    def __init__(self, depth_model_checkpoint):
         # Initialize the Depth Estimator
         self.depth_estimator = DepthEstimator(model_name=depth_model_checkpoint)
         self.start = """# .PCD v.7 - Point Cloud Data file format
@@ -61,7 +60,7 @@ DATA ascii
             return str(v)
         return str(v) + "/" + str(vt)
 
-    def create_obj(self, img, objPath='model.obj', mtlPath='model.mtl', matName='colored', useMaterial=False):
+    def createObj(self, img, objPath='model.obj', mtlPath='model.mtl', matName='colored', useMaterial=False):
         w = img.shape[1]
         h = img.shape[0]
 
@@ -129,9 +128,9 @@ DATA ascii
                             self.vete(v2, v2) + " " + self.vete(v4, v4) + "\n")
 
 
-    def extract_boundary_depth(self, image_path, filename="model.pcd"):
+    def extractBoundaryDepth(self, image_path, filename="model.pcd"):
         input_image = Image.open(image_path)
-        depth_map = self.depth_estimator.predict_depth(input_image)
+        depth_map = self.depth_estimator.predictDepth(input_image)
         print("Depth map shape:", depth_map.shape)
         # Convert to PIL Image and display
         img = Image.fromarray(depth_map)
@@ -142,7 +141,7 @@ DATA ascii
         min_depth = np.min(depth_array)
         inverted_depth_array = max_depth - depth_array + min_depth
         print("Creating the object....")
-        self.create_obj(inverted_depth_array)
+        self.createObj(inverted_depth_array)
         print("Converting....")
         with open('model.obj', "r") as infile:
             obj = infile.read()
@@ -161,95 +160,96 @@ DATA ascii
 
         os.remove("model.obj")
 
-        # pcd = o3d.io.read_point_cloud(filename)
-        # points_3d = np.asarray(pcd.points)
-        # print("Number of 3D points:", len(points_3d))
-        #
-        # projected_points_2d = self.project_mesh_to_plane(points_3d)
-        # print("Number of projected 2D points:", len(projected_points_2d))
-        #
-        # return projected_points_2d
-
-    def polygon_approx(self, file):
+    def verticalPlaneExtraction(self, file):
+        """Focus on vertical planes to reduce the 3D boundary extraction problem to 2D."""
         pcd = o3d.io.read_point_cloud(file)
 
         # Convert to numpy array
         points = np.asarray(pcd.points)
+        return points
 
+    def orthogonicProjection(self, points):
+        """Project the 3D mesh onto a horizontal plane using orthographic projection."""
         # Orthographic projection (omit Z)
         points_2d = points[:, :2]
+        return points_2d
 
+    def boundaryDelineation(self, points_2d):
+        """Precisely delineate the 2D boundary that encapsulates the scene."""
         # Determine the boundary of the points (convex hull)
         hull = ConvexHull(points_2d)
         hull_points = points_2d[hull.vertices]
 
         # Invert the y-axis to correct upside down issue
         hull_points[:, 1] = -hull_points[:, 1]
+        return hull_points
 
+    def polygonApproximation(self, hull_points):
+        """Approximate the 2D boundary with a polygon."""
         # Epsilon parameter for approximation accuracy (adjust as needed)
         epsilon = 0.01 * cv2.arcLength(hull_points.astype(np.float32), True)
         approx_polygon = cv2.approxPolyDP(hull_points.astype(np.float32), epsilon, True)
+        return approx_polygon
 
-        # Plot the results
+    def visualizeVerticalPlaneExtraction(self, points):
+        plt.figure(figsize=(8, 8))
+        plt.scatter(points[:, 0], points[:, 1], c='blue', s=1)
+        plt.title('Vertical Plane Extraction')
+        plt.xlabel('X axis')
+        plt.ylabel('Y axis')
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.show()
+
+    def visualizeOrthogonicProjection(self, points_2d):
+        plt.figure(figsize=(8, 8))
+        plt.scatter(points_2d[:, 0], points_2d[:, 1], c='green', s=1)
+        plt.title('Orthogonic Projection')
+        plt.xlabel('X axis')
+        plt.ylabel('Y axis')
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.show()
+
+    def visualizeBoundaryDelineation(self, hull_points):
+        plt.figure(figsize=(8, 8))
+        plt.plot(hull_points[:, 0], hull_points[:, 1], 'k--', lw=1)
+        plt.fill(hull_points[:, 0], hull_points[:, 1], 'lightgray')
+        plt.title('Boundary Delineation')
+        plt.xlabel('X axis')
+        plt.ylabel('Y axis')
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.gca().invert_yaxis()
+        plt.show()
+
+    def visualizePolygonApproximation(self, hull_points, approx_polygon):
+        plt.figure(figsize=(8, 8))
+        plt.plot(hull_points[:, 0], hull_points[:, 1], 'k--', lw=1)
+        plt.plot(approx_polygon[:, 0, 0], approx_polygon[:, 0, 1], 'b-', lw=2)
+        plt.fill(hull_points[:, 0], hull_points[:, 1], 'lightgray')
+        plt.title('Polygon Approximation')
+        plt.xlabel('X axis')
+        plt.ylabel('Y axis')
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.gca().invert_yaxis()
+        plt.show()
+
+    def visualizePolygonApproximation(self, hull_points, approx_polygon):
         plt.plot(hull_points[:, 0], hull_points[:, 1], 'k--', lw=1)  # Hull boundary in black dashed line
-        plt.plot(approx_polygon[:, 0, 0], approx_polygon[:, 0, 1], 'b-', lw=2)  # Approximated polygon in blue line
+        for poly in approx_polygon:
+            plt.plot(poly[0][0], poly[0][1], 'bx')  # Plot each polygon vertex as a blue 'x'
+
         plt.fill(hull_points[:, 0], hull_points[:, 1], 'lightgray')  # Fill the convex hull for visualization
+
+        # Add vertices for the hull points
+        plt.scatter(hull_points[:, 0], hull_points[:, 1], c='red', marker='o', label='Hull vertices')
+
+        # Annotate the polygon vertices with numbers
+        for i, poly in enumerate(approx_polygon):
+            plt.text(poly[0][0], poly[0][1], f'{i}', color='blue', fontsize=12, ha='right', va='bottom')
 
         plt.title('Polygon Approximation of 2D Orthographic Projection')
         plt.xlabel('X axis')
         plt.ylabel('Y axis')
         plt.gca().set_aspect('equal', adjustable='box')
         plt.gca().invert_yaxis()  # Ensure y-axis is not inverted for visualization
+        plt.legend()
         plt.show()
-
-
-    def extrude_polygon_to_3d(self, polygon_vertices_2d, scene_height):
-        # Create an empty list to store the 3D vertices
-        vertices_3d = []
-
-        # First, add the base vertices (at z=0)
-        for vertex in polygon_vertices_2d:
-            vertices_3d.append([vertex[0], vertex[1], 0])
-
-        # Then, add the top vertices (at z=scene_height)
-        for vertex in polygon_vertices_2d:
-            vertices_3d.append([vertex[0], vertex[1], scene_height])
-
-        # Convert vertices list to numpy array
-        vertices_3d = np.array(vertices_3d)
-
-        # Create an empty mesh
-        mesh = o3d.geometry.TriangleMesh()
-
-        # Set the vertices of the mesh
-        mesh.vertices = o3d.utility.Vector3dVector(vertices_3d)
-
-        # Prepare to create triangles for the sides of the mesh
-        triangles = []
-        num_base_vertices = len(polygon_vertices_2d)
-
-        # Forming sides by connecting four points
-        for i in range(num_base_vertices):
-            # Indices of the base vertices
-            base_vertex_index = i
-            next_base_vertex_index = (i + 1) % num_base_vertices
-
-            # Indices of the top vertices
-            top_vertex_index = i + num_base_vertices
-            next_top_vertex_index = (next_base_vertex_index + num_base_vertices) % (2 * num_base_vertices)
-
-            # Create two triangles for the current side
-            triangles.append([base_vertex_index, next_base_vertex_index, top_vertex_index])
-            triangles.append([next_base_vertex_index, next_top_vertex_index, top_vertex_index])
-
-        # Add triangles to the mesh
-        mesh.triangles = o3d.utility.Vector3iVector(np.array(triangles))
-
-        # Optionally, add top and bottom faces here
-
-        # Compute normals for the mesh
-        mesh.compute_vertex_normals()
-        print("Number of vertices in the extruded mesh:", len(mesh.vertices))
-        print("Number of triangles in the extruded mesh:", len(mesh.triangles))
-
-        return mesh
