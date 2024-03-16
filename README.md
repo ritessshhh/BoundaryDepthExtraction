@@ -41,7 +41,7 @@ pip install torch torchvision Pillow transformers numpy open3d scipy matplotlib 
   </tr>
 </table>
 
-## 3D Triangular Mesh Back-Projection: (Flatten View)
+## 3D Triangular Mesh Back-Projection (Flatten View):
 
 <table>
    <tr>
