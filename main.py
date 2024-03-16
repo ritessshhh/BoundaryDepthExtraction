@@ -3,14 +3,18 @@ from DepthEstimator import BoundaryDepthExtractor
 import open3d as o3d
 import numpy as np
 
-def saveVerticesToJson(vertices, filename="vertices.json"):
-    """Save the vertices of the approximated polygon to a JSON file."""
-    for key, value in vertices.items():
+def saveVerticesToJson(data, filename="vertices.json"):
+    """Save the vertices and camera data to a JSON file."""
+    # Convert any ndarray objects to lists
+    for key, value in data.items():
         if isinstance(value, np.ndarray):
-            vertices[key] = value.tolist()
+            data[key] = value.tolist()
+
+    # Flatten the vertices list
+    data['vertices'] = [vertex[0] for vertex in data['vertices']]
 
     with open(filename, "w") as outfile:
-        json.dump(vertices, outfile, indent=4)
+        json.dump(data, outfile, indent=4)
 
 if __name__ == "__main__":
     boundaryDepthExtractor = BoundaryDepthExtractor(
