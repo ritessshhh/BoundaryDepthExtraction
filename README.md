@@ -25,10 +25,31 @@ pip install torch torchvision Pillow transformers numpy open3d scipy matplotlib 
 6. **Polygon Approximation:** The 2D boundary is then approximated with a polygon to simplify the representation. This approximation is done using the Douglas-Peucker algorithm, which reduces the number of points in the boundary while maintaining its overall shape. The ```polygonApproximation``` method in the ```BoundaryDepthExtractor``` class performs this step.
 
 ## Input:
-<img width="500" alt="Screenshot 2024-03-07 at 10 54 16 PM" src="https://github.com/ritessshhh/BoundaryDepth/assets/81812754/15230bb3-9046-46d1-b18a-387e770e12df">
+
+<table>
+  <tr>
+    <td>
+      <img breadth= "500" width="500" alt="Screenshot 2024-03-07 at 10 54 16 PM" src="https://github.com/ritessshhh/BoundaryDepth/assets/81812754/15230bb3-9046-46d1-b18a-387e770e12df">
+    </td>
+    <td>
+      <img breadth= "500" width="500" alt="Screenshot 2024-03-15 at 8 40 41 PM" src="https://github.com/ritessshhh/BoundaryDepth/assets/81812754/306a50f3-7dde-4629-bf40-3c65751176f4">
+    </td>
+  </tr>
+</table>
+
 
 ## Polygon Approximation:
 
-<img width="500" alt="Screenshot 2024-03-15 at 8 33 01 PM" src="https://github.com/ritessshhh/BoundaryDepth/assets/81812754/33c1305c-ece7-42c5-a67a-9071be5a23ab">
+<table>
+  <tr>
+    <td>
+      <img breadth= "500" width="500" alt="Screenshot 2024-03-15 at 8 33 01 PM" src="https://github.com/ritessshhh/BoundaryDepth/assets/81812754/33c1305c-ece7-42c5-a67a-9071be5a23ab">
+    </td>
+    <td>
+      <img breadth= "500" width="500" alt="Screenshot 2024-03-15 at 8 38 52 PM" src="https://github.com/ritessshhh/BoundaryDepth/assets/81812754/8221d6b6-cd01-4f4c-9575-30acd438f175">
+    </td>
+  </tr>
+</table>
+
 
 
