@@ -1,4 +1,4 @@
-# Depth Estimation and Boundary Extraction
+# Boundary Depth Extraction
 
 This project implements a multi-step pipeline for extracting boundary depth from images. The process involves estimating a depth map from a monocular image, back-projecting this image into a 3D triangular mesh, and then extracting planar surfaces to approximate boundary conditions. This approach is inspired by the methodology described in the paper "LOOSECONTROL: Lifting ControlNet for Generalized Depth Conditioning."
 
