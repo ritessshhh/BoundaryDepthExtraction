@@ -28,11 +28,15 @@ pip install torch torchvision Pillow transformers numpy open3d scipy matplotlib 
 
 <table>
   <tr>
+    <th>Bedroom Picture</th>
+    <th>Empty Room Picture</th>
+  </tr>
+  <tr>
     <td>
-      <img breadth= "500" width="500" alt="Screenshot 2024-03-07 at 10 54 16 PM" src="https://github.com/ritessshhh/BoundaryDepth/assets/81812754/15230bb3-9046-46d1-b18a-387e770e12df">
+      <img breadth="500" width="500" alt="Screenshot 2024-03-07 at 10 54 16 PM" src="https://github.com/ritessshhh/BoundaryDepth/assets/81812754/15230bb3-9046-46d1-b18a-387e770e12df">
     </td>
     <td>
-<img breadth= "500" width="500" alt="Screenshot 2024-03-15 at 9 13 00 PM" src="https://github.com/ritessshhh/BoundaryDepth/assets/81812754/1bac6d50-2b0e-4423-a434-cd5977452fde">
+      <img breadth="500" width="500" alt="Screenshot 2024-03-15 at 9 13 00 PM" src="https://github.com/ritessshhh/BoundaryDepth/assets/81812754/1bac6d50-2b0e-4423-a434-cd5977452fde">
     </td>
   </tr>
 </table>
@@ -40,6 +44,10 @@ pip install torch torchvision Pillow transformers numpy open3d scipy matplotlib 
 ## 3D Triangular Mesh Back-Projection: (Flatten View)
 
 <table>
+   <tr>
+    <th>Bedroom Picture</th>
+    <th>Empty Room Picture</th>
+  </tr>
   <tr>
     <td>
        <img width="500" alt="Screenshot 2024-03-15 at 9 16 09 PM" src="https://github.com/ritessshhh/BoundaryDepth/assets/81812754/40cf6038-3e6b-40ac-9d8e-52ccc314fe35">
@@ -54,6 +62,10 @@ pip install torch torchvision Pillow transformers numpy open3d scipy matplotlib 
 ## Polygon Approximation:
 
 <table>
+    <tr>
+    <th>Bedroom Picture</th>
+    <th>Empty Room Picture</th>
+  </tr>
   <tr>
     <td>
       <img breadth= "500" width="500" alt="Screenshot 2024-03-15 at 8 33 01 PM" src="https://github.com/ritessshhh/BoundaryDepth/assets/81812754/33c1305c-ece7-42c5-a67a-9071be5a23ab">
