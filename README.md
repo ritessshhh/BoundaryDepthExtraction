@@ -14,7 +14,7 @@ pip install torch torchvision Pillow transformers numpy open3d scipy matplotlib 
 
 1. **Depth Map Estimation:** The first step is to estimate the depth map of the given image using a monocular depth estimator. In the provided code, this is accomplished using the ```DepthEstimator``` class, which utilizes the ```DPTForDepthEstimation``` model from the transformers library. The input image is processed and passed through the model to obtain a depth map.
 
-2. **3D Triangular Mesh Back-Projection:** Once the depth map is obtained, the next step is to back-project the image into a 3D triangular mesh within the world space. This involves converting the depth map into a set of 3D points that represent the scene geometry. In the provided code, this step is performed by the createObj method within the ```BoundaryDepthExtractor``` class, which generates a 3D object file (model.obj) from the depth map.
+2. **3D Triangular Mesh Back-Projection:** Once the depth map is obtained, the next step is to back-project the image into a 3D triangular mesh within the world space. This involves converting the depth map into a set of 3D points that represent the scene geometry. In the provided code, this step is performed by the ```createObj``` method within the ```BoundaryDepthExtractor``` class, which generates a 3D object file (model.obj) from the depth map.
    
 3. **Vertical Plane Extraction:** For efficiency during training, the code focuses only on vertical planes. This reduces the 3D boundary extraction problem to a simpler 2D problem. The ```verticalPlaneExtraction``` method in the ```BoundaryDepthExtractor``` class is responsible for this step, although the actual implementation is not provided in the code snippet.
    
