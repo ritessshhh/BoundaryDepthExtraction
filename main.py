@@ -12,9 +12,9 @@ if __name__ == "__main__":
         depth_model_checkpoint='Intel/dpt-hybrid-midas'
     )
 
-    image_path = 'images/teddy.jpg'
-    boundaryDepthExtractor.extractBoundaryDepth(image_path, filename="model.pcd")
-    # pcd = o3d.io.read_point_cloud('model.pcd')
+    image_path = 'images/bedroom01.jpg'
+    # boundaryDepthExtractor.extractBoundaryDepth(image_path, filename="model.pcd")
+    pcd = o3d.io.read_point_cloud('model.pcd')
 
     # Visualize the point cloud
     # o3d.visualization.draw_geometries([pcd])
@@ -22,14 +22,14 @@ if __name__ == "__main__":
 
     # boundaryDepthExtractor.visualizeVerticalPlaneExtraction(points)
 
-    points_2d = boundaryDepthExtractor.orthogonicProjection(points)
+    points_2d = boundaryDepthExtractor.orthogonalProjection(points)
     # boundaryDepthExtractor.visualizeOrthogonicProjection(points_2d)
 
     hull_points = boundaryDepthExtractor.boundaryDelineation(points_2d)
     # boundaryDepthExtractor.visualizeBoundaryDelineation(hull_points)
 
     vertices = boundaryDepthExtractor.polygonApproximation(hull_points)
-    # boundaryDepthExtractor.visualizePolygonApproximation(hull_points, vertices)
+    boundaryDepthExtractor.visualizePolygonApproximation(hull_points, vertices)
 
     # Save the vertices to a JSON file
     saveVerticesToJson(vertices, filename="vertices.json")

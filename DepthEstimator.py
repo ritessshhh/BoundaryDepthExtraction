@@ -160,19 +160,27 @@ DATA ascii
 
         os.remove("model.obj")
 
+    # def verticalPlaneExtraction(self, file):
+    #     """Focus on vertical planes to reduce the 3D boundary extraction problem to 2D."""
+    #     pcd = o3d.io.read_point_cloud(file)
+    #
+    #     # Convert to numpy array
+    #     points = np.asarray(pcd.points)
+    #     return points
+
     def verticalPlaneExtraction(self, file):
         """Focus on vertical planes to reduce the 3D boundary extraction problem to 2D."""
         pcd = o3d.io.read_point_cloud(file)
-
-        # Convert to numpy array
         points = np.asarray(pcd.points)
         return points
 
-    def orthogonicProjection(self, points):
-        """Project the 3D mesh onto a horizontal plane using orthographic projection."""
-        # Orthographic projection (omit Z)
-        points_2d = points[:, :2]
-        return points_2d
+    def orthogonalProjection(self, points, vertical_plane_normal=(0, 1, 0), plane_point=(0, 0, 0)):
+        """
+        Project the 3D points onto a vertical plane defined by vertical_plane_normal and plane_point.
+        """
+        projected_points_xz = points[:, [0, 2]]
+
+        return projected_points_xz
 
     def boundaryDelineation(self, points_2d):
         """Precisely delineate the 2D boundary that encapsulates the scene."""
@@ -206,7 +214,7 @@ DATA ascii
         plt.title('Orthogonic Projection')
         plt.xlabel('X axis')
         plt.ylabel('Y axis')
-        plt.gca().set_aspect('equal', adjustable='box')
+        # plt.gca().invert_yaxis()
         plt.show()
 
     def visualizeBoundaryDelineation(self, hull_points):
@@ -233,23 +241,29 @@ DATA ascii
         plt.show()
 
     def visualizePolygonApproximation(self, hull_points, approx_polygon):
-        plt.plot(hull_points[:, 0], hull_points[:, 1], 'k--', lw=1)  # Hull boundary in black dashed line
-        for poly in approx_polygon:
-            plt.plot(poly[0][0], poly[0][1], 'bx')  # Plot each polygon vertex as a blue 'x'
+        # Connect the hull points with straight lines
+        for i in range(len(hull_points)):
+            next_index = (i + 1) % len(hull_points)
+            plt.plot([hull_points[i, 0], hull_points[next_index, 0]],
+                     [hull_points[i, 1], hull_points[next_index, 1]], 'k--', lw=1)
 
-        plt.fill(hull_points[:, 0], hull_points[:, 1], 'lightgray')  # Fill the convex hull for visualization
+        # Plot the polygon approximation with straight lines
+        for i in range(len(approx_polygon)):
+            next_index = (i + 1) % len(approx_polygon)
+            plt.plot([approx_polygon[i][0, 0], approx_polygon[next_index][0, 0]],
+                     [approx_polygon[i][0, 1], approx_polygon[next_index][0, 1]], 'b-', lw=2)
 
-        # Add vertices for the hull points
-        plt.scatter(hull_points[:, 0], hull_points[:, 1], c='red', marker='o', label='Hull vertices')
+        # Fill the convex hull for visualization
+        plt.fill(hull_points[:, 0], hull_points[:, 1], 'lightgray', alpha=0.5)
 
-        # Annotate the polygon vertices with numbers
-        for i, poly in enumerate(approx_polygon):
-            plt.text(poly[0][0], poly[0][1], f'{i}', color='blue', fontsize=12, ha='right', va='bottom')
+        # Plot each polygon vertex and annotate with numbers
+        for i, vertex in enumerate(approx_polygon[:, 0, :]):
+            plt.plot(vertex[0], vertex[1], 'bx')  # Blue 'x' for each vertex
+            plt.text(vertex[0], vertex[1], str(i), color='black', fontsize=6, ha='right', va='bottom')
 
+        # Set up the plot
         plt.title('Polygon Approximation of 2D Orthographic Projection')
         plt.xlabel('X axis')
         plt.ylabel('Y axis')
         plt.gca().set_aspect('equal', adjustable='box')
-        plt.gca().invert_yaxis()  # Ensure y-axis is not inverted for visualization
-        plt.legend()
         plt.show()
