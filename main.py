@@ -1,11 +1,16 @@
 import json
 from DepthEstimator import BoundaryDepthExtractor
 import open3d as o3d
+import numpy as np
 
 def saveVerticesToJson(vertices, filename="vertices.json"):
     """Save the vertices of the approximated polygon to a JSON file."""
+    for key, value in vertices.items():
+        if isinstance(value, np.ndarray):
+            vertices[key] = value.tolist()
+
     with open(filename, "w") as outfile:
-        json.dump(vertices.tolist(), outfile)
+        json.dump(vertices, outfile, indent=4)
 
 if __name__ == "__main__":
     boundaryDepthExtractor = BoundaryDepthExtractor(
@@ -17,7 +22,7 @@ if __name__ == "__main__":
     pcd = o3d.io.read_point_cloud('model.pcd')
 
     # Visualize the point cloud
-    # o3d.visualization.draw_geometries([pcd])
+    o3d.visualization.draw_geometries([pcd])
     points = boundaryDepthExtractor.verticalPlaneExtraction("model.pcd")
 
     # boundaryDepthExtractor.visualizeVerticalPlaneExtraction(points)
@@ -32,4 +37,9 @@ if __name__ == "__main__":
     boundaryDepthExtractor.visualizePolygonApproximation(hull_points, vertices)
 
     # Save the vertices to a JSON file
-    saveVerticesToJson(vertices, filename="vertices.json")
+    JSON = {}
+    camera = o3d.camera.PinholeCameraIntrinsic(o3d.camera.PinholeCameraIntrinsicParameters.PrimeSenseDefault)
+    camera.intrinsic_matrix
+    JSON['camera'] = camera.intrinsic_matrix
+    JSON['vertices'] = vertices.tolist()
+    saveVerticesToJson(JSON, filename="verticesAndCamera.json")
